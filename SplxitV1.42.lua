@@ -1,4 +1,4 @@
--- Splxit Terminal V1.42 (Aimbot Locks on Single Target, Reset Command, Draggable GUI)
+-- Splxit Terminal V1.42 (Aimbot Locks on Single Target, Reset Command, Draggable GUI, 80% Accuracy)
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -162,7 +162,14 @@ end)
 
 RunService.RenderStepped:Connect(function()
 	if aimbotEnabled and lockedTarget and lockedTarget.Character and lockedTarget.Character:FindFirstChild("Head") then
-		workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, lockedTarget.Character.Head.Position)
+		local headPos = lockedTarget.Character.Head.Position
+		local rng = Random.new()
+		if rng:NextNumber() <= 0.8 then
+			workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, headPos)
+		else
+			local offset = Vector3.new(rng:NextNumber(-0.5, 0.5), rng:NextNumber(-0.5, 0.5), rng:NextNumber(-0.5, 0.5))
+			workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, headPos + offset)
+		end
 	end
 end)
 
