@@ -9,29 +9,30 @@ gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 
 -- Main Frame
-local frame = Instance.new("Frame", gui)
+local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 600, 0, 360)
 frame.Position = UDim2.new(0.5, -300, 0.5, -180)
-frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-frame.BackgroundTransparency = 0.1
+frame.BackgroundColor3 = Color3.fromRGB(60, 60, 60) -- darker grey
+frame.BackgroundTransparency = 0.05
 frame.BorderSizePixel = 0
 frame.AnchorPoint = Vector2.new(0.5, 0.5)
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
 frame.Visible = true
+frame.Parent = gui
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 
 -- Top Bar
 local topBar = Instance.new("Frame", frame)
-topBar.Size = UDim2.new(1, 0, 0, 36)
-topBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-topBar.BackgroundTransparency = 0.8
+topBar.Size = UDim2.new(1, 0, 0, 32)
+topBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+topBar.BackgroundTransparency = 0.1
 topBar.BorderSizePixel = 0
-Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 14)
+Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 10)
 
 -- App Title
 local title = Instance.new("TextLabel", topBar)
 title.Text = "Splxit V1.42"
 title.Font = Enum.Font.Code
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextColor3 = Color3.fromRGB(230, 230, 230)
 title.TextSize = 16
 title.BackgroundTransparency = 1
 title.Size = UDim2.new(1, -100, 1, 0)
@@ -46,10 +47,9 @@ closeBtn.Size = UDim2.new(0, 36, 1, 0)
 closeBtn.Position = UDim2.new(1, -44, 0, 0)
 closeBtn.BackgroundTransparency = 1
 closeBtn.Font = Enum.Font.Code
-closeBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
-closeBtn.TextSize = 22
+closeBtn.TextColor3 = Color3.fromRGB(230, 80, 80)
+closeBtn.TextSize = 20
 closeBtn.AutoButtonColor = false
-closeBtn.ToolTip = "Close Terminal"
 
 -- Minimize Button
 local minBtn = Instance.new("TextButton", topBar)
@@ -58,14 +58,13 @@ minBtn.Size = UDim2.new(0, 36, 1, 0)
 minBtn.Position = UDim2.new(1, -88, 0, 0)
 minBtn.BackgroundTransparency = 1
 minBtn.Font = Enum.Font.Code
-minBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
-minBtn.TextSize = 26
+minBtn.TextColor3 = Color3.fromRGB(230, 230, 230)
+minBtn.TextSize = 20
 minBtn.AutoButtonColor = false
-minBtn.ToolTip = "Minimize Terminal"
 
 -- Output Scrolling Frame
 local scrollFrame = Instance.new("ScrollingFrame", frame)
-scrollFrame.Position = UDim2.new(0, 16, 0, 46)
+scrollFrame.Position = UDim2.new(0, 16, 0, 40)
 scrollFrame.Size = UDim2.new(1, -32, 0, 260)
 scrollFrame.BackgroundTransparency = 1
 scrollFrame.BorderSizePixel = 0
@@ -73,192 +72,191 @@ scrollFrame.CanvasSize = UDim2.new(0, 0, 1, 0)
 scrollFrame.ScrollBarThickness = 6
 scrollFrame.VerticalScrollBarInset = Enum.ScrollBarInset.Always
 scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scrollFrame.ClipsDescendants = true
 
 -- Output TextLabel
 local outputLabel = Instance.new("TextLabel", scrollFrame)
 outputLabel.Size = UDim2.new(1, -10, 0, 0)
 outputLabel.Position = UDim2.new(0, 5, 0, 0)
 outputLabel.BackgroundTransparency = 1
-outputLabel.TextColor3 = Color3.fromRGB(200, 230, 255)
+outputLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
 outputLabel.Font = Enum.Font.Code
 outputLabel.TextSize = 14
 outputLabel.TextXAlignment = Enum.TextXAlignment.Left
 outputLabel.TextYAlignment = Enum.TextYAlignment.Top
 outputLabel.TextWrapped = true
-outputLabel.Text = ""
+outputLabel.Text = "Welcome to Splxit terminal!\nType 'cmds' to see available commands.\n"
 
--- Prompt Frame
-local promptFrame = Instance.new("Frame", frame)
-promptFrame.Size = UDim2.new(1, -32, 0, 38)
-promptFrame.Position = UDim2.new(0, 16, 1, -54)
-promptFrame.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-promptFrame.BorderSizePixel = 0
-Instance.new("UICorner", promptFrame).CornerRadius = UDim.new(0, 10)
-
--- Fixed Prompt Label ("SPLXIT: >")
-local promptLabel = Instance.new("TextLabel", promptFrame)
-promptLabel.Text = "SPLXIT: >"
-promptLabel.Font = Enum.Font.Code
-promptLabel.TextSize = 15
-promptLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-promptLabel.BackgroundTransparency = 1
-promptLabel.Size = UDim2.new(0, 90, 1, 0)
-promptLabel.Position = UDim2.new(0, 8, 0, 0)
-promptLabel.TextXAlignment = Enum.TextXAlignment.Left
-promptLabel.TextYAlignment = Enum.TextYAlignment.Center
+-- Input Frame (grey rounded box)
+local inputFrame = Instance.new("Frame", frame)
+inputFrame.Size = UDim2.new(1, -32, 0, 38)
+inputFrame.Position = UDim2.new(0, 16, 1, -54)
+inputFrame.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
+inputFrame.BorderSizePixel = 0
+Instance.new("UICorner", inputFrame).CornerRadius = UDim.new(0, 8)
 
 -- Input Box
-local inputBox = Instance.new("TextBox", promptFrame)
-inputBox.Size = UDim2.new(1, -110, 1, 0)
-inputBox.Position = UDim2.new(0, 100, 0, 0)
+local inputBox = Instance.new("TextBox", inputFrame)
+inputBox.Size = UDim2.new(1, -16, 1, -10)
+inputBox.Position = UDim2.new(0, 8, 0, 5)
 inputBox.BackgroundTransparency = 1
-inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+inputBox.TextColor3 = Color3.fromRGB(230, 230, 230)
 inputBox.Font = Enum.Font.Code
 inputBox.TextSize = 15
 inputBox.TextXAlignment = Enum.TextXAlignment.Left
 inputBox.ClearTextOnFocus = false
+inputBox.PlaceholderText = "SPLXIT: >"
 inputBox.Text = ""
-inputBox.PlaceholderText = "Enter command..."
+inputBox.TextEditable = true
+inputBox.ClipsDescendants = true
 
--- Append text to output with auto scroll
+-- Utility to append output with scrolling
 local function appendOutput(text)
 	if outputLabel.Text ~= "" then
 		outputLabel.Text = outputLabel.Text .. "\n" .. text
 	else
 		outputLabel.Text = text
 	end
-	wait()
+	wait() -- wait for text bounds to update
 	outputLabel.Size = UDim2.new(1, -10, 0, outputLabel.TextBounds.Y)
 	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, outputLabel.TextBounds.Y + 10)
 	scrollFrame.CanvasPosition = Vector2.new(0, outputLabel.TextBounds.Y)
 end
 
--- Fake IP info for ipleak command
-local fakeIPData = {
-	["8.8.8.8"] = {
-		Location = "Mountain View, California, USA",
-		ISP = "Google LLC",
-		Hostname = "dns.google"
-	},
-	["1.1.1.1"] = {
-		Location = "Research, Australia",
-		ISP = "Cloudflare",
-		Hostname = "one.one.one.one"
-	},
+-- Fake IP Info DB
+local fakeLocations = {
+	{"New York", "USA", "Verizon", "nyc-gw.verizon.net"},
+	{"Tokyo", "Japan", "NTT", "tokyo-ntt.jp"},
+	{"London", "UK", "BT", "lndn.bt.net"},
+	{"Paris", "France", "Orange", "paris.orange.fr"},
+	{"Toronto", "Canada", "Bell", "toronto.bell.ca"},
 }
 
 local function getFakeIPInfo(ip)
-	local data = fakeIPData[ip] or {
-		Location = "Unknown Location",
-		ISP = "Unknown ISP",
-		Hostname = "Unknown Host"
-	}
-	return ("IP LEAK REPORT\nIP Address: %s\nLocation: %s\nISP: %s\nHostname: %s"):format(
-		ip, data.Location, data.ISP, data.Hostname
+	local fake = fakeLocations[math.random(1, #fakeLocations)]
+	return string.format(
+		"IP LEAK REPORT\nIP Address: %s\nLocation: %s, %s\nISP: %s\nHostname: %s",
+		ip, fake[1], fake[2], fake[3], fake[4]
 	)
 end
 
--- Fake DDOS info
-local function getFakeDDOSInfo(ip)
-	return ([[
-DDOS ATTACK INITIATED ON %s
-Target Info:
-Name: Jane Doe
-Social Security Number: 123-45-6789
-Address: 123 Main Street, Anytown
-IP Address: %s
+-- Fake Personal Info DB for DDOS command
+local fakePersonalInfos = {
+	{
+		Name = "John Doe",
+		SSN = "123-45-6789",
+		Address = "742 Evergreen Terrace, Springfield",
+		IP = "192.168.1.100",
+	},
+	{
+		Name = "Jane Smith",
+		SSN = "987-65-4321",
+		Address = "221B Baker Street, London",
+		IP = "10.0.0.5",
+	},
+	{
+		Name = "Alice Johnson",
+		SSN = "555-44-3333",
+		Address = "12 Grimmauld Place, London",
+		IP = "172.16.0.10",
+	},
+}
 
-Attack Status: SUCCESSFUL
-Duration: 120 seconds
-Packets Sent: 500 million
-]]):format(ip, ip)
+local function getFakeDDOSInfo(ip)
+	local info = fakePersonalInfos[math.random(1, #fakePersonalInfos)]
+	return string.format(
+		"DDOS ATTACK INITIATED ON %s\n" ..
+		"Target Info:\nName: %s\nSocial Security Number: %s\nAddress: %s\nIP Address: %s\n" ..
+		"Attack Status: SUCCESSFUL\nDuration: %d seconds\nPackets Sent: %d million\n",
+		ip, info.Name, info.SSN, info.Address, info.IP,
+		math.random(10, 120), math.random(100, 1000)
+	)
 end
 
--- Commands list
+-- List all commands text
 local function getCommandsList()
 	return [[
 Available Commands:
-- ipleak <ip>   : Show fake IP info.
-- ddos <ip>     : Simulate fake DDOS attack.
+- ipleak <ip>   : Simulate IP information lookup.
+- ddos <ip>     : Simulate a DDOS attack with fake target info.
 - cmds          : Show this command list.
 ]]
 end
 
--- Execute command function
-local function executeCommand(text)
-	local commandLine = text:match("^%s*(.-)%s*$") or ""
-	local args = {}
-	for word in commandLine:gmatch("%S+") do
-		table.insert(args, word)
-	end
-
-	appendOutput("SPLXIT: > " .. text)
-
-	if args[1] == "ipleak" and args[2] then
-		appendOutput("Looking up IP info for " .. args[2] .. "...")
-		wait(1)
-		appendOutput(getFakeIPInfo(args[2]))
-	elseif args[1] == "ddos" and args[2] then
-		appendOutput("Launching DDOS attack on " .. args[2] .. "...")
-		wait(1)
-		appendOutput(getFakeDDOSInfo(args[2]))
-	elseif args[1] == "cmds" then
-		appendOutput(getCommandsList())
-	elseif args[1] == "" then
-		-- Do nothing on empty command
-	else
-		appendOutput("Error: Unknown command. Type 'cmds' to see commands.")
-	end
-end
-
--- Enter key pressed event
+-- Input box handler
 inputBox.FocusLost:Connect(function(enterPressed)
 	if enterPressed then
-		local cmd = inputBox.Text
-		executeCommand(cmd)
+		local text = inputBox.Text
+		local command = text:match("^%s*SPLXIT:%s*>%s*(.+)$") or text -- remove prefix if present
+		command = command:lower()
+		if command == "" then
+			inputBox.Text = ""
+			return
+		end
+
+		local args = {}
+		for word in command:gmatch("%S+") do
+			table.insert(args, word)
+		end
+
+		appendOutput("SPLXIT: > " .. text)
+
+		if args[1] == "ipleak" and args[2] then
+			appendOutput(getFakeIPInfo(args[2]))
+		elseif args[1] == "ddos" and args[2] then
+			appendOutput(getFakeDDOSInfo(args[2]))
+		elseif args[1] == "cmds" then
+			appendOutput(getCommandsList())
+		else
+			appendOutput("Unknown command: " .. (args[1] or ""))
+		end
 		inputBox.Text = ""
 	end
 end)
 
--- Close button function
-closeBtn.MouseButton1Click:Connect(function()
-	gui.Enabled = false
-end)
-
--- Minimize button function (toggle minimize)
-local minimized = false
-minBtn.MouseButton1Click:Connect(function()
-	minimized = not minimized
-	if minimized then
-		frame.Size = UDim2.new(0, 300, 0, 40)
-		scrollFrame.Visible = false
-		promptFrame.Visible = false
-	else
-		frame.Size = UDim2.new(0, 600, 0, 360)
-		scrollFrame.Visible = true
-		promptFrame.Visible = true
+-- Fade toggle function
+local visible = true
+local function fade(state)
+	if state then
+		frame.Visible = true
 	end
-end)
+	local goal = {
+		BackgroundTransparency = state and 0.05 or 1
+	}
+	local tween = TweenService:Create(frame, TweenInfo.new(0.3), goal)
+	tween:Play()
 
--- Fade toggle on Right Shift
-local faded = false
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-	if input.KeyCode == Enum.KeyCode.RightShift then
-		faded = not faded
-		local goal = {}
-		if faded then
-			goal.BackgroundTransparency = 0.7
-		else
-			goal.BackgroundTransparency = 0.1
+	for _, v in pairs(frame:GetDescendants()) do
+		if v:IsA("TextLabel") or v:IsA("TextButton") or v:IsA("TextBox") then
+			local t = TweenService:Create(v, TweenInfo.new(0.3), {
+				TextTransparency = state and 0 or 1
+			})
+			t:Play()
 		end
-		TweenService:Create(frame, TweenInfo.new(0.3), goal):Play()
+	end
+
+	if not state then
+		delay(0.3, function()
+			frame.Visible = false
+		end)
+	end
+end
+
+-- Toggle terminal on RightShift
+UserInputService.InputBegan:Connect(function(input, gpe)
+	if not gpe and input.KeyCode == Enum.KeyCode.RightShift then
+		visible = not visible
+		fade(visible)
 	end
 end)
 
--- Show initial welcome message
-appendOutput("Welcome to Splxit Terminal V1.42")
-appendOutput("Type 'cmds' to see available commands.")
+-- Close button behavior
+closeBtn.MouseButton1Click:Connect(function()
+	visible = false
+	fade(false)
+end)
 
-inputBox:CaptureFocus()
+-- Minimize button behavior
+minBtn.MouseButton1Click:Connect(function()
+	visible = false
+	fade(false)
+end)
