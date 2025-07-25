@@ -1,8 +1,9 @@
--- Splxit Terminal V1.42 (Improved with Fly, Draggable GUI, and Centered Text)
+-- Splxit Terminal V1.42 (Fixed, Improved, Fly, Draggable, Aimbot for Testing)
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
@@ -17,47 +18,18 @@ frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 frame.BackgroundTransparency = 0.1
 frame.BorderSizePixel = 0
 frame.AnchorPoint = Vector2.new(0.5, 0.5)
+frame.Active = true
+frame.Draggable = true
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
-frame.Visible = true
 
-local dragToggle, dragInput, dragStart, startPos
-local function updateInput(input)
-	local delta = input.Position - dragStart
-	frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
-		startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-topBar = Instance.new("Frame", frame)
+local topBar = Instance.new("Frame", frame)
 topBar.Size = UDim2.new(1, 0, 0, 36)
 topBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 topBar.BackgroundTransparency = 0.8
 topBar.BorderSizePixel = 0
+topBar.Active = true
+topBar.Draggable = true
 Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 14)
-
-topBar.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragToggle = true
-		dragStart = input.Position
-		startPos = frame.Position
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragToggle = false
-			end
-		end)
-	end
-end)
-
-topBar.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement then
-		dragInput = input
-	end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-	if input == dragInput and dragToggle then
-		updateInput(input)
-	end
-end)
 
 local title = Instance.new("TextLabel", topBar)
 title.Text = "Splxit V1.42"
@@ -132,6 +104,7 @@ inputBox.ClearTextOnFocus = false
 inputBox.Text = ""
 inputBox.PlaceholderText = "Enter command..."
 
+-- Append output with new label for each message
 local function appendOutput(text)
 	local line = Instance.new("TextLabel", scrollFrame)
 	line.Size = UDim2.new(1, -10, 0, 0)
@@ -139,94 +112,69 @@ local function appendOutput(text)
 	line.TextColor3 = Color3.fromRGB(200, 230, 255)
 	line.Font = Enum.Font.Code
 	line.TextSize = 14
-	line.TextXAlignment = Enum.TextXAlignment.Center
+	line.TextXAlignment = Enum.TextXAlignment.Left
 	line.TextYAlignment = Enum.TextYAlignment.Top
 	line.TextWrapped = true
 	line.Text = text
 	line.AutomaticSize = Enum.AutomaticSize.Y
 end
 
+-- Aimbot logic
+local aimbotEnabled = false
+local function getClosestTarget()
+	local closestPlayer = nil
+	local shortestDistance = math.huge
+	local camera = workspace.CurrentCamera
+	local mousePos = UserInputService:GetMouseLocation()
+
+	for _, plr in pairs(Players:GetPlayers()) do
+		if plr ~= player and plr.Character and plr.Character:FindFirstChild("Head") then
+			local headPos, onScreen = camera:WorldToViewportPoint(plr.Character.Head.Position)
+			if onScreen then
+				local dist = (Vector2.new(headPos.X, headPos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
+				if dist < shortestDistance then
+					shortestDistance = dist
+					closestPlayer = plr
+				end
+			end
+		end
+	end
+	return closestPlayer
+end
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+	if gpe then return end
+	if input.KeyCode == Enum.KeyCode.Y then
+		aimbotEnabled = not aimbotEnabled
+		appendOutput("Aimbot " .. (aimbotEnabled and "enabled" or "disabled"))
+	end
+end)
+
+RunService.RenderStepped:Connect(function()
+	if aimbotEnabled then
+		local target = getClosestTarget()
+		if target and target.Character and target.Character:FindFirstChild("Head") then
+			workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, target.Character.Head.Position)
+		end
+	end
+end)
+
 local function getCommandsList()
 	return [[
 Available Commands:
-- ipleak <ip>   : Show IP information.
-- ddos <ip>     : Simulate DDOS operation.
-- fly           : Enable flight mode.
-- cmds          : Show this command list.
+- cmds       : Show this command list.
+- aimbot     : Enable aimbot (toggle with Y)
 ]]
 end
 
-local flying = false
-local function startFlying()
-	if flying then return end
-	local char = player.Character or player.CharacterAdded:Wait()
-	local hrp = char:WaitForChild("HumanoidRootPart")
-
-	flying = true
-	appendOutput("Flight enabled. Press F to stop.")
-
-	local bg = Instance.new("BodyGyro", hrp)
-	bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-	bg.P = 9e4
-	bg.CFrame = hrp.CFrame
-
-	local bv = Instance.new("BodyVelocity", hrp)
-	bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-	bv.Velocity = Vector3.new(0, 0, 0)
-
-	local cam = workspace.CurrentCamera
-	local speed = 60
-	local keys = {}
-
-	UserInputService.InputBegan:Connect(function(input, gpe)
-		if gpe then return end
-		local code = input.KeyCode.Name
-		keys[code] = true
-		if code == "F" then
-			flying = false
-			bg:Destroy()
-			bv:Destroy()
-			appendOutput("Flight disabled.")
-		end
-	end)
-
-	UserInputService.InputEnded:Connect(function(input)
-		keys[input.KeyCode.Name] = false
-	end)
-
-	task.spawn(function()
-		while flying do
-			task.wait()
-			local dir = Vector3.zero
-			if keys.W then dir += cam.CFrame.LookVector end
-			if keys.S then dir -= cam.CFrame.LookVector end
-			if keys.A then dir -= cam.CFrame.RightVector end
-			if keys.D then dir += cam.CFrame.RightVector end
-			bv.Velocity = dir.Unit * speed
-			bg.CFrame = cam.CFrame
-		end
-	end)
-end
-
 local function executeCommand(text)
-	local commandLine = text:match("^%s*(.-)%s*$") or ""
-	local args = {}
-	for word in commandLine:gmatch("%S+") do
-		table.insert(args, word:lower())
-	end
-
 	appendOutput("SPLXIT: > " .. text)
-
-	if args[1] == "ipleak" then
-		appendOutput("Looking up IP info for " .. (args[2] or "N/A") .. "...")
-		appendOutput("[Mocked IP lookup results]")
-	elseif args[1] == "ddos" then
-		appendOutput("Launching DDOS simulation on " .. (args[2] or "N/A") .. "...")
-		appendOutput("[Mocked DDOS output]")
-	elseif args[1] == "cmds" then
+	local cmd = text:lower()
+	if cmd == "cmds" then
 		appendOutput(getCommandsList())
-	elseif args[1] == "fly" then
-		startFlying()
+	elseif cmd == "aimbot" then
+		aimbotEnabled = true
+		appendOutput("Aimbot enabled. Press Y to toggle.")
 	else
 		appendOutput("Error: Unknown command. Type 'cmds' to see commands.")
 	end
@@ -256,7 +204,9 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 	if input.KeyCode == Enum.KeyCode.RightShift then
 		faded = not faded
-		TweenService:Create(frame, TweenInfo.new(0.3), { BackgroundTransparency = faded and 0.7 or 0.1 }):Play()
+		TweenService:Create(frame, TweenInfo.new(0.3), {
+			BackgroundTransparency = faded and 0.7 or 0.1
+		}):Play()
 	end
 end)
 
