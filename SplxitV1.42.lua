@@ -1,4 +1,4 @@
--- Splxit Terminal V1.42 (Fixed, Improved, Fly, Draggable, Aimbot for Testing + Reset Command)
+-- Splxit Terminal V1.42 (Aimbot Locks on Single Target, Reset Command, Draggable GUI)
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -119,6 +119,8 @@ local function appendOutput(text)
 end
 
 local aimbotEnabled = false
+local lockedTarget = nil
+
 local function getClosestTarget()
 	local closestPlayer = nil
 	local shortestDistance = math.huge
@@ -144,16 +146,23 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 	if gpe then return end
 	if input.KeyCode == Enum.KeyCode.Y then
 		aimbotEnabled = not aimbotEnabled
-		appendOutput("Aimbot " .. (aimbotEnabled and "enabled" or "disabled"))
+		if aimbotEnabled then
+			lockedTarget = getClosestTarget()
+			if lockedTarget then
+				appendOutput("Aimbot locked on " .. lockedTarget.Name)
+			else
+				appendOutput("No target found.")
+			end
+		else
+			lockedTarget = nil
+			appendOutput("Aimbot disabled.")
+		end
 	end
 end)
 
 RunService.RenderStepped:Connect(function()
-	if aimbotEnabled then
-		local target = getClosestTarget()
-		if target and target.Character and target.Character:FindFirstChild("Head") then
-			workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, target.Character.Head.Position)
-		end
+	if aimbotEnabled and lockedTarget and lockedTarget.Character and lockedTarget.Character:FindFirstChild("Head") then
+		workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, lockedTarget.Character.Head.Position)
 	end
 end)
 
@@ -173,7 +182,12 @@ local function executeCommand(text)
 		appendOutput(getCommandsList())
 	elseif cmd == "aimbot" then
 		aimbotEnabled = true
-		appendOutput("Aimbot enabled. Press Y to toggle.")
+		lockedTarget = getClosestTarget()
+		if lockedTarget then
+			appendOutput("Aimbot locked on " .. lockedTarget.Name .. ". Press Y to toggle.")
+		else
+			appendOutput("No target found.")
+		end
 	elseif cmd == "reset" then
 		player:LoadCharacter()
 		appendOutput("Character reset.")
