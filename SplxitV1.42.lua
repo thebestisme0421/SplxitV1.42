@@ -1,4 +1,7 @@
--- Splxit Terminal V1.42 (Aimbot, Speed, Reset, Draggable GUI, 80% Accuracy)
+-- Splxit Terminal V1.42 (Aimbot Locks on Single Target, Reset Command, Draggable GUI)
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")-- Splxit Terminal V1.42 (Aimbot Locks on Single Target, Reset Command, Draggable GUI, 80% Accuracy)
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -6,8 +9,6 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
-
--- GUI Setup
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 gui.Name = "SplxitTerminal"
 gui.ResetOnSpawn = false
@@ -106,7 +107,6 @@ inputBox.ClearTextOnFocus = false
 inputBox.Text = ""
 inputBox.PlaceholderText = "Enter command..."
 
--- Output function
 local function appendOutput(text)
 	local line = Instance.new("TextLabel", scrollFrame)
 	line.Size = UDim2.new(1, -10, 0, 0)
@@ -121,49 +121,28 @@ local function appendOutput(text)
 	line.AutomaticSize = Enum.AutomaticSize.Y
 end
 
--- Speed toggle logic
-local speedEnabled = false
-local speedValue = 16
-
-UserInputService.InputBegan:Connect(function(input, gpe)
-	if gpe then return end
-	if input.KeyCode == Enum.KeyCode.F then
-		speedEnabled = not speedEnabled
-		if player.Character and player.Character:FindFirstChild("Humanoid") then
-			player.Character.Humanoid.WalkSpeed = speedEnabled and speedValue or 16
-			appendOutput("Speed " .. (speedEnabled and "enabled" or "disabled") .. " at " .. speedValue)
-		end
-	end
-end)
-
-player.CharacterAdded:Connect(function(char)
-	char:WaitForChild("Humanoid")
-	if speedEnabled then
-		char.Humanoid.WalkSpeed = speedValue
-	end
-end)
-
--- Aimbot logic
 local aimbotEnabled = false
 local lockedTarget = nil
 
 local function getClosestTarget()
+	local closestPlayer = nil
+	local shortestDistance = math.huge
 	local camera = workspace.CurrentCamera
 	local mousePos = UserInputService:GetMouseLocation()
-	local closest, shortestDist = nil, math.huge
+
 	for _, plr in pairs(Players:GetPlayers()) do
 		if plr ~= player and plr.Character and plr.Character:FindFirstChild("Head") then
 			local headPos, onScreen = camera:WorldToViewportPoint(plr.Character.Head.Position)
 			if onScreen then
 				local dist = (Vector2.new(headPos.X, headPos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
-				if dist < shortestDist then
-					shortestDist = dist
-					closest = plr
+				if dist < shortestDistance then
+					shortestDistance = dist
+					closestPlayer = plr
 				end
 			end
 		end
 	end
-	return closest
+	return closestPlayer
 end
 
 UserInputService.InputBegan:Connect(function(input, gpe)
@@ -172,7 +151,11 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 		aimbotEnabled = not aimbotEnabled
 		if aimbotEnabled then
 			lockedTarget = getClosestTarget()
-			appendOutput(lockedTarget and ("Aimbot locked on " .. lockedTarget.Name) or "No target found.")
+			if lockedTarget then
+				appendOutput("Aimbot locked on " .. lockedTarget.Name)
+			else
+				appendOutput("No target found.")
+			end
 		else
 			lockedTarget = nil
 			appendOutput("Aimbot disabled.")
@@ -193,14 +176,12 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- Command system
 local function getCommandsList()
 	return [[
 Available Commands:
-- cmds             : Show this command list.
-- aimbot           : Enable aimbot (toggle with Y)
-- reset            : Reset your character.
-- speed <1-500>    : Set your walkspeed. Toggle with F.
+- cmds       : Show this command list.
+- aimbot     : Enable aimbot (toggle with Y)
+- reset      : Reset your character.
 ]]
 end
 
@@ -212,28 +193,21 @@ local function executeCommand(text)
 	elseif cmd == "aimbot" then
 		aimbotEnabled = true
 		lockedTarget = getClosestTarget()
-		appendOutput(lockedTarget and ("Aimbot locked on " .. lockedTarget.Name) or "No target found.")
+		if lockedTarget then
+			appendOutput("Aimbot locked on " .. lockedTarget.Name .. ". Press Y to toggle.")
+		else
+			appendOutput("No target found.")
+		end
 	elseif cmd == "reset" then
 		player:LoadCharacter()
 		appendOutput("Character reset.")
-	elseif cmd:match("speed %d+") then
-		local num = tonumber(cmd:match("%d+"))
-		if num and num >= 1 and num <= 500 then
-			speedValue = num
-			if speedEnabled and player.Character and player.Character:FindFirstChild("Humanoid") then
-				player.Character.Humanoid.WalkSpeed = speedValue
-			end
-			appendOutput("Speed set to " .. num .. ". Press F to toggle.")
-		else
-			appendOutput("Error: Speed must be between 1 and 500.")
-		end
 	else
 		appendOutput("Error: Unknown command. Type 'cmds' to see commands.")
 	end
 end
 
 inputBox.FocusLost:Connect(function(enterPressed)
-	if enterPressed and inputBox.Text ~= "" then
+	if enterPressed then
 		executeCommand(inputBox.Text)
 		inputBox.Text = ""
 	end
@@ -251,7 +225,6 @@ minBtn.MouseButton1Click:Connect(function()
 	promptFrame.Visible = not minimized
 end)
 
--- GUI fade toggle (RightShift)
 local faded = false
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
@@ -263,7 +236,151 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
--- Welcome
 appendOutput("Welcome to Splxit Terminal V1.42")
 appendOutput("Type 'cmds' to see available commands.")
 inputBox:CaptureFocus()
+
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "SplxitTerminal"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 600, 0, 360)
+frame.Position = UDim2.new(0.5, -300, 0.5, -180)
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.BackgroundTransparency = 0.1
+frame.BorderSizePixel = 0
+frame.AnchorPoint = Vector2.new(0.5, 0.5)
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
+
+local topBar = Instance.new("Frame", frame)
+topBar.Size = UDim2.new(1, 0, 0, 36)
+topBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+topBar.BackgroundTransparency = 0.8
+topBar.BorderSizePixel = 0
+topBar.Active = true
+topBar.Draggable = true
+Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 14)
+
+local title = Instance.new("TextLabel", topBar)
+title.Text = "Splxit V1.42"
+title.Font = Enum.Font.Code
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.TextSize = 16
+title.BackgroundTransparency = 1
+title.Size = UDim2.new(1, -100, 1, 0)
+title.Position = UDim2.new(0, 16, 0, 0)
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+local closeBtn = Instance.new("TextButton", topBar)
+closeBtn.Text = "✕"
+closeBtn.Size = UDim2.new(0, 36, 1, 0)
+closeBtn.Position = UDim2.new(1, -44, 0, 0)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Font = Enum.Font.Code
+closeBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+closeBtn.TextSize = 22
+closeBtn.AutoButtonColor = false
+
+local minBtn = Instance.new("TextButton", topBar)
+minBtn.Text = "–"
+minBtn.Size = UDim2.new(0, 36, 1, 0)
+minBtn.Position = UDim2.new(1, -88, 0, 0)
+minBtn.BackgroundTransparency = 1
+minBtn.Font = Enum.Font.Code
+minBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
+minBtn.TextSize = 26
+minBtn.AutoButtonColor = false
+
+local scrollFrame = Instance.new("ScrollingFrame", frame)
+scrollFrame.Position = UDim2.new(0, 16, 0, 46)
+scrollFrame.Size = UDim2.new(1, -32, 0, 260)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.BorderSizePixel = 0
+scrollFrame.ScrollBarThickness = 6
+scrollFrame.VerticalScrollBarInset = Enum.ScrollBarInset.Always
+scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scrollFrame.CanvasSize = UDim2.new(0, 0, 1, 0)
+
+local listLayout = Instance.new("UIListLayout", scrollFrame)
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Padding = UDim.new(0, 2)
+
+local promptFrame = Instance.new("Frame", frame)
+promptFrame.Size = UDim2.new(1, -32, 0, 38)
+promptFrame.Position = UDim2.new(0, 16, 1, -54)
+promptFrame.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+promptFrame.BorderSizePixel = 0
+Instance.new("UICorner", promptFrame).CornerRadius = UDim.new(0, 10)
+
+local promptLabel = Instance.new("TextLabel", promptFrame)
+promptLabel.Text = "SPLXIT: >"
+promptLabel.Font = Enum.Font.Code
+promptLabel.TextSize = 15
+promptLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+promptLabel.BackgroundTransparency = 1
+promptLabel.Size = UDim2.new(0, 90, 1, 0)
+promptLabel.Position = UDim2.new(0, 8, 0, 0)
+promptLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local inputBox = Instance.new("TextBox", promptFrame)
+inputBox.Size = UDim2.new(1, -110, 1, 0)
+inputBox.Position = UDim2.new(0, 100, 0, 0)
+inputBox.BackgroundTransparency = 1
+inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+inputBox.Font = Enum.Font.Code
+inputBox.TextSize = 15
+inputBox.TextXAlignment = Enum.TextXAlignment.Left
+inputBox.ClearTextOnFocus = false
+inputBox.Text = ""
+inputBox.PlaceholderText = "Enter command..."
+
+-- Speed toggle with V
+local speedEnabled = false
+local speedValue = 16
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+	if gpe then return end
+	if input.KeyCode == Enum.KeyCode.V then
+		speedEnabled = not speedEnabled
+		if speedEnabled then
+			player.Character.Humanoid.WalkSpeed = speedValue
+		else
+			player.Character.Humanoid.WalkSpeed = 16
+		end
+	end
+end)
+
+-- Add speed command
+local function executeCommand(text)
+	appendOutput("SPLXIT: > " .. text)
+	local cmd = text:lower()
+	if cmd == "cmds" then
+		appendOutput(getCommandsList())
+	elseif cmd == "aimbot" then
+		-- aimbot logic here
+	elseif cmd == "reset" then
+		player:LoadCharacter()
+		appendOutput("Character reset.")
+	elseif cmd:match("speed %d+") then
+		local num = tonumber(cmd:match("%d+"))
+		if num and num >= 1 and num <= 500 then
+			speedValue = num
+			if speedEnabled and player.Character then
+				player.Character.Humanoid.WalkSpeed = speedValue
+			end
+			appendOutput("Speed set to " .. num .. ". Press V to toggle.")
+		else
+			appendOutput("Error: Speed must be 1-500.")
+		end
+	else
+		appendOutput("Error: Unknown command. Type 'cmds' to see commands.")
+	end
+end
