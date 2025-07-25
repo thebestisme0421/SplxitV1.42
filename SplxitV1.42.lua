@@ -1,4 +1,5 @@
--- Splxit Terminal V1.42 (Improved with fixes)
+-- Splxit Terminal V1.42 (Fixed and Improved)
+
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -35,7 +36,6 @@ title.BackgroundTransparency = 1
 title.Size = UDim2.new(1, -100, 1, 0)
 title.Position = UDim2.new(0, 16, 0, 0)
 title.TextXAlignment = Enum.TextXAlignment.Left
-title.TextYAlignment = Enum.TextYAlignment.Center
 
 local closeBtn = Instance.new("TextButton", topBar)
 closeBtn.Text = "✕"
@@ -46,7 +46,6 @@ closeBtn.Font = Enum.Font.Code
 closeBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
 closeBtn.TextSize = 22
 closeBtn.AutoButtonColor = false
-closeBtn.ToolTip = "Close Terminal"
 
 local minBtn = Instance.new("TextButton", topBar)
 minBtn.Text = "–"
@@ -57,30 +56,20 @@ minBtn.Font = Enum.Font.Code
 minBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
 minBtn.TextSize = 26
 minBtn.AutoButtonColor = false
-minBtn.ToolTip = "Minimize Terminal"
 
 local scrollFrame = Instance.new("ScrollingFrame", frame)
 scrollFrame.Position = UDim2.new(0, 16, 0, 46)
 scrollFrame.Size = UDim2.new(1, -32, 0, 260)
 scrollFrame.BackgroundTransparency = 1
 scrollFrame.BorderSizePixel = 0
-scrollFrame.CanvasSize = UDim2.new(0, 0, 1, 0)
 scrollFrame.ScrollBarThickness = 6
 scrollFrame.VerticalScrollBarInset = Enum.ScrollBarInset.Always
 scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scrollFrame.ClipsDescendants = true
+scrollFrame.CanvasSize = UDim2.new(0, 0, 1, 0)
 
-local outputLabel = Instance.new("TextLabel", scrollFrame)
-outputLabel.Size = UDim2.new(1, -10, 0, 0)
-outputLabel.Position = UDim2.new(0, 5, 0, 0)
-outputLabel.BackgroundTransparency = 1
-outputLabel.TextColor3 = Color3.fromRGB(200, 230, 255)
-outputLabel.Font = Enum.Font.Code
-outputLabel.TextSize = 14
-outputLabel.TextXAlignment = Enum.TextXAlignment.Left
-outputLabel.TextYAlignment = Enum.TextYAlignment.Top
-outputLabel.TextWrapped = true
-outputLabel.Text = ""
+local listLayout = Instance.new("UIListLayout", scrollFrame)
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Padding = UDim.new(0, 2)
 
 local promptFrame = Instance.new("Frame", frame)
 promptFrame.Size = UDim2.new(1, -32, 0, 38)
@@ -98,7 +87,6 @@ promptLabel.BackgroundTransparency = 1
 promptLabel.Size = UDim2.new(0, 90, 1, 0)
 promptLabel.Position = UDim2.new(0, 8, 0, 0)
 promptLabel.TextXAlignment = Enum.TextXAlignment.Left
-promptLabel.TextYAlignment = Enum.TextYAlignment.Center
 
 local inputBox = Instance.new("TextBox", promptFrame)
 inputBox.Size = UDim2.new(1, -110, 1, 0)
@@ -112,44 +100,36 @@ inputBox.ClearTextOnFocus = false
 inputBox.Text = ""
 inputBox.PlaceholderText = "Enter command..."
 
+-- Append output with new label for each message
 local function appendOutput(text)
-	if outputLabel.Text ~= "" then
-		outputLabel.Text = outputLabel.Text .. "\n" .. text
-	else
-		outputLabel.Text = text
-	end
-	wait()
-	outputLabel.Size = UDim2.new(1, -10, 0, outputLabel.TextBounds.Y)
-	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, outputLabel.TextBounds.Y + 10)
-	scrollFrame.CanvasPosition = Vector2.new(0, outputLabel.TextBounds.Y)
+	local line = Instance.new("TextLabel", scrollFrame)
+	line.Size = UDim2.new(1, -10, 0, 0)
+	line.BackgroundTransparency = 1
+	line.TextColor3 = Color3.fromRGB(200, 230, 255)
+	line.Font = Enum.Font.Code
+	line.TextSize = 14
+	line.TextXAlignment = Enum.TextXAlignment.Left
+	line.TextYAlignment = Enum.TextYAlignment.Top
+	line.TextWrapped = true
+	line.Text = text
+	line.AutomaticSize = Enum.AutomaticSize.Y
 end
 
+-- Fake data
 local fakeIPData = {
-	["8.8.8.8"] = {
-		Location = "Mountain View, California, USA",
-		ISP = "Google LLC",
-		Hostname = "dns.google"
-	},
-	["1.1.1.1"] = {
-		Location = "Research, Australia",
-		ISP = "Cloudflare",
-		Hostname = "one.one.one.one"
-	},
+	["8.8.8.8"] = { Location = "Mountain View, California, USA", ISP = "Google LLC", Hostname = "dns.google" },
+	["1.1.1.1"] = { Location = "Research, Australia", ISP = "Cloudflare", Hostname = "one.one.one.one" },
 }
 
 local function getFakeIPInfo(ip)
 	local data = fakeIPData[ip] or {
-		Location = "Unknown Location",
-		ISP = "Unknown ISP",
-		Hostname = "Unknown Host"
+		Location = "Unknown Location", ISP = "Unknown ISP", Hostname = "Unknown Host"
 	}
-	return ("IP LEAK REPORT\nIP Address: %s\nLocation: %s\nISP: %s\nHostname: %s"):format(
-		ip, data.Location, data.ISP, data.Hostname
-	)
+	return ("IP LEAK REPORT\nIP Address: %s\nLocation: %s\nISP: %s\nHostname: %s"):format(ip, data.Location, data.ISP, data.Hostname)
 end
 
 local function getFakeDDOSInfo(ip)
-	return ([[ 
+	return ([[
 DDOS ATTACK INITIATED ON %s
 Target Info:
 Name: Jane Doe
@@ -176,7 +156,7 @@ local function executeCommand(text)
 	local commandLine = text:match("^%s*(.-)%s*$") or ""
 	local args = {}
 	for word in commandLine:gmatch("%S+") do
-		table.insert(args, word:lower()) -- convert to lowercase for case-insensitive commands
+		table.insert(args, word:lower())
 	end
 
 	appendOutput("SPLXIT: > " .. text)
@@ -200,12 +180,13 @@ local function executeCommand(text)
 	elseif args[1] == "cmds" then
 		appendOutput(getCommandsList())
 	elseif args[1] == "" then
-		-- Do nothing on empty command
+		-- no action
 	else
 		appendOutput("Error: Unknown command. Type 'cmds' to see commands.")
 	end
 end
 
+-- Connect input
 inputBox.FocusLost:Connect(function(enterPressed)
 	if enterPressed then
 		local cmd = inputBox.Text
@@ -214,6 +195,7 @@ inputBox.FocusLost:Connect(function(enterPressed)
 	end
 end)
 
+-- Close/minimize handling
 closeBtn.MouseButton1Click:Connect(function()
 	gui.Enabled = false
 end)
@@ -232,22 +214,18 @@ minBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
+-- RightShift = transparency toggle
 local faded = false
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 	if input.KeyCode == Enum.KeyCode.RightShift then
 		faded = not faded
-		local goal = {}
-		if faded then
-			goal.BackgroundTransparency = 0.7
-		else
-			goal.BackgroundTransparency = 0.1
-		end
+		local goal = { BackgroundTransparency = faded and 0.7 or 0.1 }
 		TweenService:Create(frame, TweenInfo.new(0.3), goal):Play()
 	end
 end)
 
+-- Initial messages
 appendOutput("Welcome to Splxit Terminal V1.42")
 appendOutput("Type 'cmds' to see available commands.")
-
 inputBox:CaptureFocus()
