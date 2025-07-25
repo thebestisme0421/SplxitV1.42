@@ -116,147 +116,138 @@ local function appendOutput(text)
 	line.AutomaticSize = Enum.AutomaticSize.Y
 end
 
+-- Variables for toggles and features
 local aimbotEnabled = false
-local lockedTarget = nil
+local currentTarget = nil
+local espEnabled = false
+local espObjects = {}
 
-local function getClosestTarget()
-	local closestPlayer = nil
-	local shortestDistance = math.huge
-	local camera = workspace.CurrentCamera
-	local mousePos = UserInputService:GetMouseLocation()
+-- Function to get player's ping
+local function getPing()
+	local stats = player:FindFirstChild("NetworkClient") and player.NetworkClient:FindFirstChild("Ping")
+	if stats then
+		return stats:GetValue()
+	end
+	return 60 -- default
+end
 
-	for _, plr in pairs(Players:GetPlayers()) do
-		if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-			local torsoPos, onScreen = camera:WorldToViewportPoint(plr.Character.HumanoidRootPart.Position)
+-- Aimbot function (smooth lock on torso with ping-based accuracy)
+RunService.RenderStepped:Connect(function()
+	if aimbotEnabled and currentTarget and currentTarget.Character then
+		local hrp = currentTarget.Character:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			local cam = workspace.CurrentCamera
+			local ping = getPing()
+			local accuracy = 1
+			if ping <= 30 then
+				accuracy = 1
+			elseif ping <= 80 then
+				accuracy = 0.8
+			elseif ping <= 100 then
+				accuracy = 0.6
+			elseif ping >= 155 then
+				accuracy = 0.4
+			end
+			local targetPos = hrp.Position + Vector3.new(math.random(-1,1)*(1-accuracy), math.random(-1,1)*(1-accuracy), 0)
+			local direction = (targetPos - cam.CFrame.Position).Unit
+			cam.CFrame = cam.CFrame:Lerp(CFrame.new(cam.CFrame.Position, cam.CFrame.Position + direction), 0.15)
+		end
+	end
+end)
+
+-- ESP logic
+local function createESP(plr)
+	if espObjects[plr] then return end
+	local circle = Drawing.new("Circle")
+	circle.Radius = 6
+	circle.Thickness = 1
+	circle.Color = Color3.new(1, 1, 1)
+	circle.Visible = true
+	circle.Transparency = 1
+	circle.Filled = false
+
+	local name = Drawing.new("Text")
+	name.Text = plr.Name
+	name.Size = 13
+	name.Center = true
+	name.Outline = true
+	name.Color = Color3.fromRGB(180, 180, 180)
+	name.OutlineColor = Color3.fromRGB(255, 255, 255)
+	name.Visible = true
+
+	espObjects[plr] = {circle = circle, name = name}
+
+	RunService.RenderStepped:Connect(function()
+		if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+			local pos = plr.Character.HumanoidRootPart.Position
+			local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(pos)
+			circle.Visible = onScreen and espEnabled
+			name.Visible = onScreen and espEnabled
 			if onScreen then
-				local dist = (Vector2.new(torsoPos.X, torsoPos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
-				if dist < shortestDistance then
-					shortestDistance = dist
-					closestPlayer = plr
+				circle.Position = Vector2.new(screenPos.X, screenPos.Y + 20)
+				name.Position = Vector2.new(screenPos.X, screenPos.Y - 30)
+			end
+		else
+			circle.Visible = false
+			name.Visible = false
+		end
+	end)
+end
+
+-- Cleanup ESP
+local function removeESP()
+	for _, esp in pairs(espObjects) do
+		if esp.circle then esp.circle:Remove() end
+		if esp.name then esp.name:Remove() end
+	end
+	espObjects = {}
+end
+
+-- Command parser
+inputBox.FocusLost:Connect(function(enter)
+	if not enter then return end
+	local input = inputBox.Text:lower()
+	inputBox.Text = ""
+
+	if input == "aimbot" then
+		aimbotEnabled = not aimbotEnabled
+		appendOutput("Aimbot toggled: " .. tostring(aimbotEnabled))
+		if aimbotEnabled then
+			-- Get first valid target
+			for _, plr in ipairs(Players:GetPlayers()) do
+				if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+					currentTarget = plr
+					break
 				end
 			end
+		else
+			currentTarget = nil
 		end
-	end
-	return closestPlayer
-end
-
-UserInputService.InputBegan:Connect(function(input, gpe)
-	if gpe then return end
-	if input.KeyCode == Enum.KeyCode.Y then
-		aimbotEnabled = not aimbotEnabled
-		if aimbotEnabled then
-			lockedTarget = getClosestTarget()
-			if lockedTarget then
-				appendOutput("Aimbot locked on " .. lockedTarget.Name)
-			else
-				appendOutput("No target found.")
+	elseif input:match("^hitbox %d+$") then
+		local size = tonumber(input:match("%d+"))
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+				local part = plr.Character.HumanoidRootPart
+				part.Size = Vector3.new(size, size, size)
+				part.Transparency = 0.7
 			end
-		else
-			lockedTarget = nil
-			appendOutput("Aimbot disabled.")
 		end
-	end
-end)
-
--- 🔁 Updated smooth and ping‑based aimbot logic:
-RunService.RenderStepped:Connect(function()
-	if aimbotEnabled and lockedTarget and lockedTarget.Character and lockedTarget.Character:FindFirstChild("HumanoidRootPart") then
-		local hrp = lockedTarget.Character.HumanoidRootPart
-		local cam = workspace.CurrentCamera
-		local targetPos = hrp.Position
-
-		local pingStat = Stats().Network.ServerStatsItem["Data Ping"]
-		local ping = pingStat and math.floor(pingStat:GetValue()) or 60
-		ping = math.clamp(ping, 0, 300)
-
-		local accuracy
-		if ping <= 30 then
-			accuracy = 1.0
-		elseif ping <= 80 then
-			accuracy = 0.8
-		elseif ping <= 100 then
-			accuracy = 0.6
-		elseif ping >= 155 then
-			accuracy = 0.4
-		else
-			accuracy = 0.5
+		appendOutput("Set hitbox size to " .. size)
+	elseif input == "esp on" then
+		espEnabled = true
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if plr ~= player then
+				createESP(plr)
+			end
 		end
-
-		local rng = Random.new()
-		if rng:NextNumber() <= accuracy then
-			cam.CFrame = cam.CFrame:Lerp(CFrame.new(cam.CFrame.Position, targetPos), 0.25)
-		else
-			local offsetMag = (1 - accuracy) * 5
-			local missOffset = Vector3.new(
-				rng:NextNumber(-offsetMag, offsetMag),
-				rng:NextNumber(-offsetMag, offsetMag),
-				rng:NextNumber(-offsetMag, offsetMag)
-			)
-			cam.CFrame = cam.CFrame:Lerp(CFrame.new(cam.CFrame.Position, targetPos + missOffset), 0.25)
-		end
-	end
-end)
-
-local function getCommandsList()
-	return [[
-Available Commands:
-- cmds       : Show this command list.
-- aimbot     : Enable aimbot (toggle with Y)
-- reset      : Reset your character.
-]]
-end
-
-local function executeCommand(text)
-	appendOutput("SPLXIT: > " .. text)
-	local cmd = text:lower()
-	if cmd == "cmds" then
-		appendOutput(getCommandsList())
-	elseif cmd == "aimbot" then
-		aimbotEnabled = true
-		lockedTarget = getClosestTarget()
-		if lockedTarget then
-			appendOutput("Aimbot locked on " .. lockedTarget.Name .. ". Press Y to toggle.")
-		else
-			appendOutput("No target found.")
-		end
-	elseif cmd == "reset" then
-		player:LoadCharacter()
-		appendOutput("Character reset.")
+		appendOutput("ESP enabled.")
+	elseif input == "esp off" then
+		espEnabled = false
+		removeESP()
+		appendOutput("ESP disabled.")
+	elseif input == "cmds" then
+		appendOutput("Commands: aimbot, hitbox <1-25>, esp on, esp off")
 	else
-		appendOutput("Error: Unknown command. Type 'cmds' to see commands.")
-	end
-end
-
-inputBox.FocusLost:Connect(function(enterPressed)
-	if enterPressed then
-		executeCommand(inputBox.Text)
-		inputBox.Text = ""
+		appendOutput("Unknown command: " .. input)
 	end
 end)
-
-closeBtn.MouseButton1Click:Connect(function()
-	gui.Enabled = false
-end)
-
-local minimized = false
-minBtn.MouseButton1Click:Connect(function()
-	minimized = not minimized
-	frame.Size = minimized and UDim2.new(0, 300, 0, 40) or UDim2.new(0, 600, 0, 360)
-	scrollFrame.Visible = not minimized
-	promptFrame.Visible = not minimized
-end)
-
-local faded = false
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-	if input.KeyCode == Enum.KeyCode.RightShift then
-		faded = not faded
-		TweenService:Create(frame, TweenInfo.new(0.3), {
-			BackgroundTransparency = faded and 0.7 or 0.1
-		}):Play()
-	end
-end)
-
-appendOutput("Welcome to Splxit Terminal V1.42")
-appendOutput("Type 'cmds' to see available commands.")
-inputBox:CaptureFocus()
