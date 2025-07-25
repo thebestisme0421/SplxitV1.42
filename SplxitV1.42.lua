@@ -1,4 +1,4 @@
--- Splxit Terminal V1.42 (Fixed and Improved)
+-- Splxit Terminal V1.42 (Fixed and Fly-Enabled)
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -100,7 +100,6 @@ inputBox.ClearTextOnFocus = false
 inputBox.Text = ""
 inputBox.PlaceholderText = "Enter command..."
 
--- Append output with new label for each message
 local function appendOutput(text)
 	local line = Instance.new("TextLabel", scrollFrame)
 	line.Size = UDim2.new(1, -10, 0, 0)
@@ -115,7 +114,61 @@ local function appendOutput(text)
 	line.AutomaticSize = Enum.AutomaticSize.Y
 end
 
--- Fake data
+local flying = false
+local function startFlying()
+	if flying then appendOutput("Already flying.") return end
+
+	local char = player.Character or player.CharacterAdded:Wait()
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if not hrp then appendOutput("Error: HumanoidRootPart not found.") return end
+
+	flying = true
+	appendOutput("Flight mode enabled. Press F to stop.")
+
+	local bodyGyro = Instance.new("BodyGyro", hrp)
+	local bodyVel = Instance.new("BodyVelocity", hrp)
+	bodyGyro.P = 9e4
+	bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+	bodyGyro.CFrame = hrp.CFrame
+	bodyVel.Velocity = Vector3.new(0, 0, 0)
+	bodyVel.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+
+	local keys = {W = false, A = false, S = false, D = false}
+	local speed = 50
+
+	UserInputService.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Keyboard then
+			local key = input.KeyCode.Name
+			if keys[key] ~= nil then keys[key] = true end
+			if key == "F" then
+				flying = false
+				bodyGyro:Destroy()
+				bodyVel:Destroy()
+				appendOutput("Flight mode disabled.")
+			end
+		end
+	end)
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Keyboard then
+			local key = input.KeyCode.Name
+			if keys[key] ~= nil then keys[key] = false end
+		end
+	end)
+	task.spawn(function()
+		while flying do
+			local cam = workspace.CurrentCamera
+			local dir = Vector3.new()
+			if keys.W then dir += cam.CFrame.LookVector end
+			if keys.S then dir -= cam.CFrame.LookVector end
+			if keys.A then dir -= cam.CFrame.RightVector end
+			if keys.D then dir += cam.CFrame.RightVector end
+			bodyVel.Velocity = dir.Unit * speed
+			bodyGyro.CFrame = cam.CFrame
+			task.wait()
+		end
+	end)
+end
+
 local fakeIPData = {
 	["8.8.8.8"] = { Location = "Mountain View, California, USA", ISP = "Google LLC", Hostname = "dns.google" },
 	["1.1.1.1"] = { Location = "Research, Australia", ISP = "Cloudflare", Hostname = "one.one.one.one" },
@@ -146,8 +199,9 @@ end
 local function getCommandsList()
 	return [[
 Available Commands:
-- ipleak <ip>   : Show fake IP info.
-- ddos <ip>     : Simulate fake DDOS attack.
+- ipleak <ip>   : Show IP information.
+- ddos <ip>     : Simulate DDOS operation.
+- fly           : Enable flight mode.
 - cmds          : Show this command list.
 ]]
 end
@@ -158,9 +212,7 @@ local function executeCommand(text)
 	for word in commandLine:gmatch("%S+") do
 		table.insert(args, word:lower())
 	end
-
 	appendOutput("SPLXIT: > " .. text)
-
 	if args[1] == "ipleak" then
 		if args[2] then
 			appendOutput("Looking up IP info for " .. args[2] .. "...")
@@ -177,6 +229,8 @@ local function executeCommand(text)
 		else
 			appendOutput("Usage: ddos <ip address/domain>")
 		end
+	elseif args[1] == "fly" then
+		startFlying()
 	elseif args[1] == "cmds" then
 		appendOutput(getCommandsList())
 	elseif args[1] == "" then
@@ -186,16 +240,13 @@ local function executeCommand(text)
 	end
 end
 
--- Connect input
 inputBox.FocusLost:Connect(function(enterPressed)
 	if enterPressed then
-		local cmd = inputBox.Text
-		executeCommand(cmd)
+		executeCommand(inputBox.Text)
 		inputBox.Text = ""
 	end
 end)
 
--- Close/minimize handling
 closeBtn.MouseButton1Click:Connect(function()
 	gui.Enabled = false
 end)
@@ -203,18 +254,11 @@ end)
 local minimized = false
 minBtn.MouseButton1Click:Connect(function()
 	minimized = not minimized
-	if minimized then
-		frame.Size = UDim2.new(0, 300, 0, 40)
-		scrollFrame.Visible = false
-		promptFrame.Visible = false
-	else
-		frame.Size = UDim2.new(0, 600, 0, 360)
-		scrollFrame.Visible = true
-		promptFrame.Visible = true
-	end
+	frame.Size = minimized and UDim2.new(0, 300, 0, 40) or UDim2.new(0, 600, 0, 360)
+	scrollFrame.Visible = not minimized
+	promptFrame.Visible = not minimized
 end)
 
--- RightShift = transparency toggle
 local faded = false
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
@@ -225,7 +269,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
--- Initial messages
 appendOutput("Welcome to Splxit Terminal V1.42")
 appendOutput("Type 'cmds' to see available commands.")
 inputBox:CaptureFocus()
