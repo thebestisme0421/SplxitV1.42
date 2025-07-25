@@ -251,3 +251,23 @@ inputBox.FocusLost:Connect(function(enter)
 		appendOutput("Unknown command: " .. input)
 	end
 end)
+
+-- Keybinds
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.Y then
+		aimbotEnabled = not aimbotEnabled
+		appendOutput("Aimbot toggled (via Y key): " .. tostring(aimbotEnabled))
+		if aimbotEnabled then
+			for _, plr in ipairs(Players:GetPlayers()) do
+				if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+					currentTarget = plr
+					break
+				end
+			end
+		else
+			currentTarget = nil
+		end
+	end
+end)
+
