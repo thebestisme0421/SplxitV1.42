@@ -1,4 +1,4 @@
--- Splxit Terminal V1.42 (Fixed, Improved, Fly, Draggable, Aimbot for Testing + Reset Command)
+-- Splxit Terminal V1.42 (With Aimbot, Hitbox, Reset, Triggerbot)
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -119,6 +119,8 @@ local function appendOutput(text)
 end
 
 local aimbotEnabled = false
+local triggerbotEnabled = false
+
 local function getClosestTarget()
 	local closestPlayer = nil
 	local shortestDistance = math.huge
@@ -145,6 +147,9 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 	if input.KeyCode == Enum.KeyCode.Y then
 		aimbotEnabled = not aimbotEnabled
 		appendOutput("Aimbot " .. (aimbotEnabled and "enabled" or "disabled"))
+	elseif input.KeyCode == Enum.KeyCode.V then
+		triggerbotEnabled = not triggerbotEnabled
+		appendOutput("Triggerbot " .. (triggerbotEnabled and "enabled" or "disabled"))
 	end
 end)
 
@@ -155,13 +160,41 @@ RunService.RenderStepped:Connect(function()
 			workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, target.Character.Head.Position)
 		end
 	end
+
+	if triggerbotEnabled then
+		local camera = workspace.CurrentCamera
+		local mouse = player:GetMouse()
+		local unitRay = camera:ScreenPointToRay(mouse.X, mouse.Y)
+		local raycastParams = RaycastParams.new()
+		raycastParams.FilterDescendantsInstances = {player.Character}
+		raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+		local ray = workspace:Raycast(unitRay.Origin, unitRay.Direction * 1000, raycastParams)
+
+		if ray and ray.Instance and ray.Instance:IsA("BasePart") and Players:GetPlayerFromCharacter(ray.Instance:FindFirstAncestorOfClass("Model")) then
+			mouse1click()
+		end
+	end
 end)
+
+local function resizeHitboxes(scale)
+	for _, plr in pairs(Players:GetPlayers()) do
+		if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+			local root = plr.Character.HumanoidRootPart
+			root.Size = Vector3.new(scale, scale, scale)
+			root.Transparency = 0.7
+			root.Material = Enum.Material.Neon
+			root.BrickColor = BrickColor.new("Bright red")
+		end
+	end
+end
 
 local function getCommandsList()
 	return [[
 Available Commands:
 - cmds       : Show this command list.
 - aimbot     : Enable aimbot (toggle with Y)
+- triggerbot : Auto fire on target (toggle with V)
+- hitbox #   : Resize enemy hitboxes (1–20)
 - reset      : Reset your character.
 ]]
 end
@@ -174,8 +207,19 @@ local function executeCommand(text)
 	elseif cmd == "aimbot" then
 		aimbotEnabled = true
 		appendOutput("Aimbot enabled. Press Y to toggle.")
+	elseif cmd == "triggerbot" then
+		triggerbotEnabled = true
+		appendOutput("Triggerbot enabled. Press V to toggle.")
+	elseif cmd:match("^hitbox") then
+		local arg = tonumber(cmd:match("hitbox%s+(%d+)"))
+		if arg and arg >= 1 and arg <= 20 then
+			resizeHitboxes(arg)
+			appendOutput("Set hitbox size to " .. arg)
+		else
+			appendOutput("Usage: hitbox <1–20>")
+		end
 	elseif cmd == "reset" then
-		player:LoadCharacter()
+		player.Character:BreakJoints()
 		appendOutput("Character reset.")
 	else
 		appendOutput("Error: Unknown command. Type 'cmds' to see commands.")
