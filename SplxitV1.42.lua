@@ -158,15 +158,41 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 	end
 end)
 
+-- 🔁 Updated smooth and ping‑based aimbot logic:
 RunService.RenderStepped:Connect(function()
 	if aimbotEnabled and lockedTarget and lockedTarget.Character and lockedTarget.Character:FindFirstChild("HumanoidRootPart") then
-		local torsoPos = lockedTarget.Character.HumanoidRootPart.Position
-		local rng = Random.new()
-		if rng:NextNumber() <= 0.6 then
-			workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, torsoPos)
+		local hrp = lockedTarget.Character.HumanoidRootPart
+		local cam = workspace.CurrentCamera
+		local targetPos = hrp.Position
+
+		local pingStat = Stats().Network.ServerStatsItem["Data Ping"]
+		local ping = pingStat and math.floor(pingStat:GetValue()) or 60
+		ping = math.clamp(ping, 0, 300)
+
+		local accuracy
+		if ping <= 30 then
+			accuracy = 1.0
+		elseif ping <= 80 then
+			accuracy = 0.8
+		elseif ping <= 100 then
+			accuracy = 0.6
+		elseif ping >= 155 then
+			accuracy = 0.4
 		else
-			local offset = Vector3.new(rng:NextNumber(-1.5, 1.5), rng:NextNumber(-1.5, 1.5), rng:NextNumber(-1.5, 1.5))
-			workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, torsoPos + offset)
+			accuracy = 0.5
+		end
+
+		local rng = Random.new()
+		if rng:NextNumber() <= accuracy then
+			cam.CFrame = cam.CFrame:Lerp(CFrame.new(cam.CFrame.Position, targetPos), 0.25)
+		else
+			local offsetMag = (1 - accuracy) * 5
+			local missOffset = Vector3.new(
+				rng:NextNumber(-offsetMag, offsetMag),
+				rng:NextNumber(-offsetMag, offsetMag),
+				rng:NextNumber(-offsetMag, offsetMag)
+			)
+			cam.CFrame = cam.CFrame:Lerp(CFrame.new(cam.CFrame.Position, targetPos + missOffset), 0.25)
 		end
 	end
 end)
