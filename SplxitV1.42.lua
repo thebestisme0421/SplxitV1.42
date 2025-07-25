@@ -1,4 +1,4 @@
--- Splxit Terminal V1.42 (Fixed, Improved, Fly, Draggable, Aimbot for Testing)
+-- Splxit Terminal V1.42 (Fixed, Improved, Fly, Draggable, Aimbot for Testing + Reset Command)
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -162,32 +162,21 @@ local function getCommandsList()
 Available Commands:
 - cmds       : Show this command list.
 - aimbot     : Enable aimbot (toggle with Y)
-- hitbox <1-20> : Set players' hitbox size (local)
+- reset      : Reset your character.
 ]]
 end
 
 local function executeCommand(text)
 	appendOutput("SPLXIT: > " .. text)
-	local args = text:lower():split(" ")
-	local cmd = args[1]
-
+	local cmd = text:lower()
 	if cmd == "cmds" then
 		appendOutput(getCommandsList())
 	elseif cmd == "aimbot" then
 		aimbotEnabled = true
 		appendOutput("Aimbot enabled. Press Y to toggle.")
-	elseif cmd == "hitbox" then
-		local scale = tonumber(args[2]) or 2
-		scale = math.clamp(scale, 1, 20)
-		for _, plr in pairs(Players:GetPlayers()) do
-			if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-				local part = plr.Character.HumanoidRootPart
-				part.Size = Vector3.new(scale, scale, scale)
-				part.Transparency = 0.7
-				part.Material = Enum.Material.ForceField
-				appendOutput("Hitbox set to size " .. scale .. " for " .. plr.Name)
-			end
-		end
+	elseif cmd == "reset" then
+		player:LoadCharacter()
+		appendOutput("Character reset.")
 	else
 		appendOutput("Error: Unknown command. Type 'cmds' to see commands.")
 	end
