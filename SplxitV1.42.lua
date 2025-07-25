@@ -1,5 +1,3 @@
--- Splxit Terminal V1.42 (Aimbot Locks on Single Target, Reset Command, Draggable GUI, 80% Accuracy)
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -128,10 +126,10 @@ local function getClosestTarget()
 	local mousePos = UserInputService:GetMouseLocation()
 
 	for _, plr in pairs(Players:GetPlayers()) do
-		if plr ~= player and plr.Character and plr.Character:FindFirstChild("Head") then
-			local headPos, onScreen = camera:WorldToViewportPoint(plr.Character.Head.Position)
+		if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+			local torsoPos, onScreen = camera:WorldToViewportPoint(plr.Character.HumanoidRootPart.Position)
 			if onScreen then
-				local dist = (Vector2.new(headPos.X, headPos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
+				local dist = (Vector2.new(torsoPos.X, torsoPos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
 				if dist < shortestDistance then
 					shortestDistance = dist
 					closestPlayer = plr
@@ -161,14 +159,14 @@ UserInputService.InputBegan:Connect(function(input, gpe)
 end)
 
 RunService.RenderStepped:Connect(function()
-	if aimbotEnabled and lockedTarget and lockedTarget.Character and lockedTarget.Character:FindFirstChild("Head") then
-		local headPos = lockedTarget.Character.Head.Position
+	if aimbotEnabled and lockedTarget and lockedTarget.Character and lockedTarget.Character:FindFirstChild("HumanoidRootPart") then
+		local torsoPos = lockedTarget.Character.HumanoidRootPart.Position
 		local rng = Random.new()
-		if rng:NextNumber() <= 0.8 then
-			workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, headPos)
+		if rng:NextNumber() <= 0.6 then
+			workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, torsoPos)
 		else
-			local offset = Vector3.new(rng:NextNumber(-0.5, 0.5), rng:NextNumber(-0.5, 0.5), rng:NextNumber(-0.5, 0.5))
-			workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, headPos + offset)
+			local offset = Vector3.new(rng:NextNumber(-1.5, 1.5), rng:NextNumber(-1.5, 1.5), rng:NextNumber(-1.5, 1.5))
+			workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, torsoPos + offset)
 		end
 	end
 end)
