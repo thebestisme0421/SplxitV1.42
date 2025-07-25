@@ -1,4 +1,4 @@
--- Splxit Terminal V1.42 (Fixed and Fly-Enabled)
+-- Splxit Terminal V1.42 (Improved with Fly, Draggable GUI, and Centered Text)
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -20,12 +20,44 @@ frame.AnchorPoint = Vector2.new(0.5, 0.5)
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
 frame.Visible = true
 
-local topBar = Instance.new("Frame", frame)
+local dragToggle, dragInput, dragStart, startPos
+local function updateInput(input)
+	local delta = input.Position - dragStart
+	frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+		startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+topBar = Instance.new("Frame", frame)
 topBar.Size = UDim2.new(1, 0, 0, 36)
 topBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 topBar.BackgroundTransparency = 0.8
 topBar.BorderSizePixel = 0
 Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 14)
+
+topBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragToggle = true
+		dragStart = input.Position
+		startPos = frame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragToggle = false
+			end
+		end)
+	end
+end)
+
+topBar.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragToggle then
+		updateInput(input)
+	end
+end)
 
 local title = Instance.new("TextLabel", topBar)
 title.Text = "Splxit V1.42"
@@ -107,93 +139,11 @@ local function appendOutput(text)
 	line.TextColor3 = Color3.fromRGB(200, 230, 255)
 	line.Font = Enum.Font.Code
 	line.TextSize = 14
-	line.TextXAlignment = Enum.TextXAlignment.Left
+	line.TextXAlignment = Enum.TextXAlignment.Center
 	line.TextYAlignment = Enum.TextYAlignment.Top
 	line.TextWrapped = true
 	line.Text = text
 	line.AutomaticSize = Enum.AutomaticSize.Y
-end
-
-local flying = false
-local function startFlying()
-	if flying then appendOutput("Already flying.") return end
-
-	local char = player.Character or player.CharacterAdded:Wait()
-	local hrp = char:FindFirstChild("HumanoidRootPart")
-	if not hrp then appendOutput("Error: HumanoidRootPart not found.") return end
-
-	flying = true
-	appendOutput("Flight mode enabled. Press F to stop.")
-
-	local bodyGyro = Instance.new("BodyGyro", hrp)
-	local bodyVel = Instance.new("BodyVelocity", hrp)
-	bodyGyro.P = 9e4
-	bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-	bodyGyro.CFrame = hrp.CFrame
-	bodyVel.Velocity = Vector3.new(0, 0, 0)
-	bodyVel.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-
-	local keys = {W = false, A = false, S = false, D = false}
-	local speed = 50
-
-	UserInputService.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.Keyboard then
-			local key = input.KeyCode.Name
-			if keys[key] ~= nil then keys[key] = true end
-			if key == "F" then
-				flying = false
-				bodyGyro:Destroy()
-				bodyVel:Destroy()
-				appendOutput("Flight mode disabled.")
-			end
-		end
-	end)
-	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.Keyboard then
-			local key = input.KeyCode.Name
-			if keys[key] ~= nil then keys[key] = false end
-		end
-	end)
-	task.spawn(function()
-		while flying do
-			local cam = workspace.CurrentCamera
-			local dir = Vector3.new()
-			if keys.W then dir += cam.CFrame.LookVector end
-			if keys.S then dir -= cam.CFrame.LookVector end
-			if keys.A then dir -= cam.CFrame.RightVector end
-			if keys.D then dir += cam.CFrame.RightVector end
-			bodyVel.Velocity = dir.Unit * speed
-			bodyGyro.CFrame = cam.CFrame
-			task.wait()
-		end
-	end)
-end
-
-local fakeIPData = {
-	["8.8.8.8"] = { Location = "Mountain View, California, USA", ISP = "Google LLC", Hostname = "dns.google" },
-	["1.1.1.1"] = { Location = "Research, Australia", ISP = "Cloudflare", Hostname = "one.one.one.one" },
-}
-
-local function getFakeIPInfo(ip)
-	local data = fakeIPData[ip] or {
-		Location = "Unknown Location", ISP = "Unknown ISP", Hostname = "Unknown Host"
-	}
-	return ("IP LEAK REPORT\nIP Address: %s\nLocation: %s\nISP: %s\nHostname: %s"):format(ip, data.Location, data.ISP, data.Hostname)
-end
-
-local function getFakeDDOSInfo(ip)
-	return ([[
-DDOS ATTACK INITIATED ON %s
-Target Info:
-Name: Jane Doe
-Social Security Number: 123-45-6789
-Address: 123 Main Street, Anytown
-IP Address: %s
-
-Attack Status: SUCCESSFUL
-Duration: 120 seconds
-Packets Sent: 500 million
-]]):format(ip, ip)
 end
 
 local function getCommandsList()
@@ -206,35 +156,77 @@ Available Commands:
 ]]
 end
 
+local flying = false
+local function startFlying()
+	if flying then return end
+	local char = player.Character or player.CharacterAdded:Wait()
+	local hrp = char:WaitForChild("HumanoidRootPart")
+
+	flying = true
+	appendOutput("Flight enabled. Press F to stop.")
+
+	local bg = Instance.new("BodyGyro", hrp)
+	bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+	bg.P = 9e4
+	bg.CFrame = hrp.CFrame
+
+	local bv = Instance.new("BodyVelocity", hrp)
+	bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+	bv.Velocity = Vector3.new(0, 0, 0)
+
+	local cam = workspace.CurrentCamera
+	local speed = 60
+	local keys = {}
+
+	UserInputService.InputBegan:Connect(function(input, gpe)
+		if gpe then return end
+		local code = input.KeyCode.Name
+		keys[code] = true
+		if code == "F" then
+			flying = false
+			bg:Destroy()
+			bv:Destroy()
+			appendOutput("Flight disabled.")
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		keys[input.KeyCode.Name] = false
+	end)
+
+	task.spawn(function()
+		while flying do
+			task.wait()
+			local dir = Vector3.zero
+			if keys.W then dir += cam.CFrame.LookVector end
+			if keys.S then dir -= cam.CFrame.LookVector end
+			if keys.A then dir -= cam.CFrame.RightVector end
+			if keys.D then dir += cam.CFrame.RightVector end
+			bv.Velocity = dir.Unit * speed
+			bg.CFrame = cam.CFrame
+		end
+	end)
+end
+
 local function executeCommand(text)
 	local commandLine = text:match("^%s*(.-)%s*$") or ""
 	local args = {}
 	for word in commandLine:gmatch("%S+") do
 		table.insert(args, word:lower())
 	end
+
 	appendOutput("SPLXIT: > " .. text)
+
 	if args[1] == "ipleak" then
-		if args[2] then
-			appendOutput("Looking up IP info for " .. args[2] .. "...")
-			wait(1)
-			appendOutput(getFakeIPInfo(args[2]))
-		else
-			appendOutput("Usage: ipleak <ip address/domain>")
-		end
+		appendOutput("Looking up IP info for " .. (args[2] or "N/A") .. "...")
+		appendOutput("[Mocked IP lookup results]")
 	elseif args[1] == "ddos" then
-		if args[2] then
-			appendOutput("Launching DDOS attack on " .. args[2] .. "...")
-			wait(1)
-			appendOutput(getFakeDDOSInfo(args[2]))
-		else
-			appendOutput("Usage: ddos <ip address/domain>")
-		end
-	elseif args[1] == "fly" then
-		startFlying()
+		appendOutput("Launching DDOS simulation on " .. (args[2] or "N/A") .. "...")
+		appendOutput("[Mocked DDOS output]")
 	elseif args[1] == "cmds" then
 		appendOutput(getCommandsList())
-	elseif args[1] == "" then
-		-- no action
+	elseif args[1] == "fly" then
+		startFlying()
 	else
 		appendOutput("Error: Unknown command. Type 'cmds' to see commands.")
 	end
@@ -264,8 +256,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 	if input.KeyCode == Enum.KeyCode.RightShift then
 		faded = not faded
-		local goal = { BackgroundTransparency = faded and 0.7 or 0.1 }
-		TweenService:Create(frame, TweenInfo.new(0.3), goal):Play()
+		TweenService:Create(frame, TweenInfo.new(0.3), { BackgroundTransparency = faded and 0.7 or 0.1 }):Play()
 	end
 end)
 
