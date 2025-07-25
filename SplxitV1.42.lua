@@ -1,4 +1,3 @@
--- Splxit Terminal V1.42
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -9,6 +8,7 @@ gui.Name = "SplxitTerminal"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 
+-- Main Frame
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 600, 0, 360)
 frame.Position = UDim2.new(0.5, -300, 0.5, -180)
@@ -19,6 +19,7 @@ frame.AnchorPoint = Vector2.new(0.5, 0.5)
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
 frame.Visible = true
 
+-- Top Bar
 local topBar = Instance.new("Frame", frame)
 topBar.Size = UDim2.new(1, 0, 0, 36)
 topBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -26,6 +27,7 @@ topBar.BackgroundTransparency = 0.8
 topBar.BorderSizePixel = 0
 Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 14)
 
+-- App Title
 local title = Instance.new("TextLabel", topBar)
 title.Text = "Splxit V1.42"
 title.Font = Enum.Font.Code
@@ -37,6 +39,7 @@ title.Position = UDim2.new(0, 16, 0, 0)
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.TextYAlignment = Enum.TextYAlignment.Center
 
+-- Close Button
 local closeBtn = Instance.new("TextButton", topBar)
 closeBtn.Text = "✕"
 closeBtn.Size = UDim2.new(0, 36, 1, 0)
@@ -48,6 +51,7 @@ closeBtn.TextSize = 22
 closeBtn.AutoButtonColor = false
 closeBtn.ToolTip = "Close Terminal"
 
+-- Minimize Button
 local minBtn = Instance.new("TextButton", topBar)
 minBtn.Text = "–"
 minBtn.Size = UDim2.new(0, 36, 1, 0)
@@ -59,6 +63,7 @@ minBtn.TextSize = 26
 minBtn.AutoButtonColor = false
 minBtn.ToolTip = "Minimize Terminal"
 
+-- Output Scrolling Frame
 local scrollFrame = Instance.new("ScrollingFrame", frame)
 scrollFrame.Position = UDim2.new(0, 16, 0, 46)
 scrollFrame.Size = UDim2.new(1, -32, 0, 260)
@@ -70,6 +75,7 @@ scrollFrame.VerticalScrollBarInset = Enum.ScrollBarInset.Always
 scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scrollFrame.ClipsDescendants = true
 
+-- Output TextLabel
 local outputLabel = Instance.new("TextLabel", scrollFrame)
 outputLabel.Size = UDim2.new(1, -10, 0, 0)
 outputLabel.Position = UDim2.new(0, 5, 0, 0)
@@ -82,6 +88,7 @@ outputLabel.TextYAlignment = Enum.TextYAlignment.Top
 outputLabel.TextWrapped = true
 outputLabel.Text = ""
 
+-- Prompt Frame
 local promptFrame = Instance.new("Frame", frame)
 promptFrame.Size = UDim2.new(1, -32, 0, 38)
 promptFrame.Position = UDim2.new(0, 16, 1, -54)
@@ -89,6 +96,7 @@ promptFrame.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 promptFrame.BorderSizePixel = 0
 Instance.new("UICorner", promptFrame).CornerRadius = UDim.new(0, 10)
 
+-- Fixed Prompt Label ("SPLXIT: >")
 local promptLabel = Instance.new("TextLabel", promptFrame)
 promptLabel.Text = "SPLXIT: >"
 promptLabel.Font = Enum.Font.Code
@@ -100,6 +108,7 @@ promptLabel.Position = UDim2.new(0, 8, 0, 0)
 promptLabel.TextXAlignment = Enum.TextXAlignment.Left
 promptLabel.TextYAlignment = Enum.TextYAlignment.Center
 
+-- Input Box
 local inputBox = Instance.new("TextBox", promptFrame)
 inputBox.Size = UDim2.new(1, -110, 1, 0)
 inputBox.Position = UDim2.new(0, 100, 0, 0)
@@ -112,6 +121,7 @@ inputBox.ClearTextOnFocus = false
 inputBox.Text = ""
 inputBox.PlaceholderText = "Enter command..."
 
+-- Append text to output with auto scroll
 local function appendOutput(text)
 	if outputLabel.Text ~= "" then
 		outputLabel.Text = outputLabel.Text .. "\n" .. text
@@ -124,6 +134,7 @@ local function appendOutput(text)
 	scrollFrame.CanvasPosition = Vector2.new(0, outputLabel.TextBounds.Y)
 end
 
+-- Fake IP info for ipleak command
 local fakeIPData = {
 	["8.8.8.8"] = {
 		Location = "Mountain View, California, USA",
@@ -148,6 +159,7 @@ local function getFakeIPInfo(ip)
 	)
 end
 
+-- Fake DDOS info
 local function getFakeDDOSInfo(ip)
 	return ([[
 DDOS ATTACK INITIATED ON %s
@@ -163,6 +175,7 @@ Packets Sent: 500 million
 ]]):format(ip, ip)
 end
 
+-- Commands list
 local function getCommandsList()
 	return [[
 Available Commands:
@@ -172,6 +185,7 @@ Available Commands:
 ]]
 end
 
+-- Execute command function
 local function executeCommand(text)
 	local commandLine = text:match("^%s*(.-)%s*$") or ""
 	local args = {}
@@ -198,6 +212,7 @@ local function executeCommand(text)
 	end
 end
 
+-- Enter key pressed event
 inputBox.FocusLost:Connect(function(enterPressed)
 	if enterPressed then
 		local cmd = inputBox.Text
@@ -206,10 +221,12 @@ inputBox.FocusLost:Connect(function(enterPressed)
 	end
 end)
 
+-- Close button function
 closeBtn.MouseButton1Click:Connect(function()
 	gui.Enabled = false
 end)
 
+-- Minimize button function (toggle minimize)
 local minimized = false
 minBtn.MouseButton1Click:Connect(function()
 	minimized = not minimized
@@ -224,6 +241,7 @@ minBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
+-- Fade toggle on Right Shift
 local faded = false
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
@@ -239,6 +257,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
+-- Show initial welcome message
 appendOutput("Welcome to Splxit Terminal V1.42")
 appendOutput("Type 'cmds' to see available commands.")
 
