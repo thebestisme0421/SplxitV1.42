@@ -271,3 +271,14 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.KeyCode == Enum.KeyCode.X then
+		local human = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if human then
+			human.WalkSpeed = 120
+			appendOutput("WalkSpeed set to 120")
+		end
+	end
+end)
