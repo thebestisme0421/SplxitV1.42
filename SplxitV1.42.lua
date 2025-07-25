@@ -104,7 +104,6 @@ inputBox.ClearTextOnFocus = false
 inputBox.Text = ""
 inputBox.PlaceholderText = "Enter command..."
 
--- Append output with new label for each message
 local function appendOutput(text)
 	local line = Instance.new("TextLabel", scrollFrame)
 	line.Size = UDim2.new(1, -10, 0, 0)
@@ -119,7 +118,6 @@ local function appendOutput(text)
 	line.AutomaticSize = Enum.AutomaticSize.Y
 end
 
--- Aimbot logic
 local aimbotEnabled = false
 local function getClosestTarget()
 	local closestPlayer = nil
@@ -164,17 +162,32 @@ local function getCommandsList()
 Available Commands:
 - cmds       : Show this command list.
 - aimbot     : Enable aimbot (toggle with Y)
+- hitbox <1-20> : Set players' hitbox size (local)
 ]]
 end
 
 local function executeCommand(text)
 	appendOutput("SPLXIT: > " .. text)
-	local cmd = text:lower()
+	local args = text:lower():split(" ")
+	local cmd = args[1]
+
 	if cmd == "cmds" then
 		appendOutput(getCommandsList())
 	elseif cmd == "aimbot" then
 		aimbotEnabled = true
 		appendOutput("Aimbot enabled. Press Y to toggle.")
+	elseif cmd == "hitbox" then
+		local scale = tonumber(args[2]) or 2
+		scale = math.clamp(scale, 1, 20)
+		for _, plr in pairs(Players:GetPlayers()) do
+			if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+				local part = plr.Character.HumanoidRootPart
+				part.Size = Vector3.new(scale, scale, scale)
+				part.Transparency = 0.7
+				part.Material = Enum.Material.ForceField
+				appendOutput("Hitbox set to size " .. scale .. " for " .. plr.Name)
+			end
+		end
 	else
 		appendOutput("Error: Unknown command. Type 'cmds' to see commands.")
 	end
